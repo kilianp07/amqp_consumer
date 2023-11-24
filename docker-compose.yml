@@ -1,0 +1,50 @@
+version: '3'
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "15672:15672"  # Port pour l'interface de gestion Web
+      - "5672:5672"  # Port pour l'accès AMQP
+    expose:
+      - "5672"  # Port pour l'accès AMQP
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  mailhog:
+    image: "mailhog/mailhog"
+    ports:
+      - "8025:8025"  # Port pour l'interface utilisateur Web
+    expose:
+      - "1025"  # Port pour l'accès SMTP
+
+  producer:
+    image: "ghcr.io/kilianp07/amqp_producer:v0.1"
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - SMTP_HOST=mailhog
+    command : amqpp
+    volumes:
+      - ./:/tmp
+    ports:
+      - "8080:8080"
+
+  consumer:
+    image: "ghcr.io/kilianp07/amqp_consumer:v0.1"
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: amqpc
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - SMTP_HOST=mailhog

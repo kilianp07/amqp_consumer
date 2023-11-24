@@ -13,13 +13,16 @@ import (
 var smtpHost string
 
 func main() {
+	log.SetOutput(os.Stdout)
 	rabbitHost := os.Getenv("RABBIT_HOST")
 	if rabbitHost == "" {
+		log.Fatalf("RABBIT_HOST environment variable is not set")
 		panic(errors.New("RABBIT_HOST environment variable is not set"))
 	}
 
 	smtpHost = os.Getenv("SMTP_HOST")
 	if smtpHost == "" {
+		log.Fatalf("SMTP_HOST environment variable is not set")
 		panic(errors.New("SMTP_HOST environment variable is not set"))
 	}
 
@@ -84,7 +87,7 @@ func sendVerificationEmail(toEmail string) {
 		"Cordialement,\n" +
 		"Votre Application"
 
-	err := smtp.SendMail(smtpHost+":1025", smtp.PlainAuth("", from, password, "localhost"), from, []string{toEmail}, []byte(msg))
+	err := smtp.SendMail(smtpHost+":1025", smtp.CRAMMD5Auth(from, password), from, []string{toEmail}, []byte(msg))
 	if err != nil {
 		fmt.Println("Failed to send verification email:", err)
 	}
